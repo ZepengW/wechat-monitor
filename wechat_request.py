@@ -6,20 +6,24 @@ from error import *
 import sys
 from csv_io import write_csv
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+import logging
 
 # 关闭报警
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 url = "https://mp.weixin.qq.com/cgi-bin/appmsg"
 
 headers = {
-    "Cookie": 'ptui_loginuin=1371946804; RK=htes1sHRPN; ptcz=a3d21d75959b623656aaf3d38ca3bcb81becb27a3fe5b88388508e5d255e9b5e; tvfe_boss_uuid=d6c5598666965073; pgv_pvid=5496426140; o_cookie=1371946804; pac_uid=1_1371946804; ua_id=7W6H0n1CFOdFthOwAAAAAKOdm07Oq_oHrMgVp6s3EyU=; wxuin=77647480655089; pgv_info=ssid=s9211065855; rewardsn=; wxtokenkey=777; uuid=cc9f83622c77ccd40542a1420db10cef; cert=h6PV27b8sOnD9zh1Cb2KdxbNA0iBFNsI; sig=h01287ce8c797385c72256ba300b6a846b1be64cb454c04eaf2d30d057e8458960d5cf84381652e2958; data_bizuin=3890910163; bizuin=3890910163; master_user=gh_a67b7e12998e; master_sid=ZTZmbkVzeWZzN3podEpITDdaczBaUnloSGFFVUNaM2RWWFRzeHZGb3Z1YnJBMUhDZng4MjY5QVZqbkVxTG1Idkg5cHB3ZEREZ1lIYldtZGtYYVlaVFRaeG5DeXk0WXJkVlJIa0xVaWpSUGNicGxwdzlzS3VFTkFkcG5nY0FkbGk5S3Q1UnVWdlZia0VjRDA5; master_ticket=e357c81aa4f4f3d52ca1ae1bcc8e1e22; data_ticket=7vXNsZ2ViFPIEq4EZ0vxGTHE63KBn4W0XhUw5Rt6Dsf+JthuvOaz81yqg+Cn+1zz; rand_info=CAESID0hnHKqC2APtlSjpvdwyscJEv7ir6LJ+tL+XRA+BhBw; slave_bizuin=3890910163; slave_user=gh_a67b7e12998e; slave_sid=OXU3dUNFTFpEM2YyektqY0VSV291YWY4dHJRYmJ1UXZWZFpibTkyUU5zSnlRcjdlek9TdXNYdVdZc3BmYmxvNzN4YUQxM05WUUU0OXdxVDJmeXRtZHMzMnYycEV2cDIwUXc1Zjl4Rk9kRHUwZ2d1M1hwMU9xZXlkQnJjUXk2WDNKeTZ4NU5kQ0tqOWZIcGVS',
+    "Cookie": 'ptui_loginuin=1371946804; RK=htes1sHRPN; ptcz=a3d21d75959b623656aaf3d38ca3bcb81becb27a3fe5b88388508e5d255e9b5e; tvfe_boss_uuid=d6c5598666965073; pgv_pvid=5496426140; o_cookie=1371946804; pac_uid=1_1371946804; ua_id=7W6H0n1CFOdFthOwAAAAAKOdm07Oq_oHrMgVp6s3EyU=; wxuin=77647480655089; uuid=c33c01ddbcba6273ecf26494b18a7b8d; bizuin=3890910163; ticket=4940d1f627494592c5268e613265f48d9f1de3ff; ticket_id=gh_a67b7e12998e; slave_bizuin=3890910163; cert=rHs0QqmnR6AYHkH6XkogdgeLGgif3EGB; noticeLoginFlag=1; remember_acct=oliver_ck%40outlook.com; rand_info=CAESIP9SfzlJqj3BQkL0FuGDbY9pRTgRlFSe317Mn7GuyH3K; data_bizuin=3890910163; data_ticket=wQku4QfMRJuFV5JS9B+skw6bOa4KWsgdM2b2yD91c0K6lE7JEZZaAzVCWOIJ7iNh; slave_sid=UUhrSlJxc05LVW9paUJabVc0YTY3bGJiS0RiMjNqcjFjaHBVRTNsajRScWc1TWpQdXFoQW5BRjJZMEdlUko2VmY4c1BzQUIwWGRrZ0VQRVFYaVlGaF9pMkpVdFo4NFlWZ3dfSHpWX1M0cFJESzRtTWxOOFpXaE9VeGZQdGRFbTlqOUFHTWhuZTdHNFNmY0ts; slave_user=gh_a67b7e12998e; xid=7ed49574623f7156efb33390fbfcbbfd; openid2ticket_o05Pq5-QxhkTYn3M78Z0_yduOsCI=AFaipTt96ERDcluq9tC1uizfkVyJsPSOUFL9eu5Ardg=; mm_lang=zh_CN; uin=o1371946804; skey=@ZBxQoRX8I',
     "User-Agent": 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
 }
 
 
 
-def get_all_articles(fakeid, token, name=''):
-    count = 10
+def get_articles(fakeid, token, name='', exist_aid = None):
+    """
+    
+    """
+    count = 5
     article_l = []
     times_try = 5  # 尝试次数
     while(times_try > 0):
@@ -28,8 +32,10 @@ def get_all_articles(fakeid, token, name=''):
             return_articles = request_once(fakeid, token, len(article_l), count)
             #print(return_articles)
         except WechatNetworkError:
-            time.sleep(3600)
+            t_wait = 120
             times_try -= 1
+            logging.warning(f'Network Error [Left try times: {times_try}], waiting {t_wait}s')
+            time.sleep(t_wait)
             continue
         except:
             print("Unexpected error:", sys.exc_info()[0])
@@ -38,10 +44,15 @@ def get_all_articles(fakeid, token, name=''):
             #搜索完成
             print(f'[{name if name == "" else fakeid}] search finish')
             return article_l
-        article_l += return_articles
-        times_try = 10
-        print(f'already search articles: {len(article_l)}')
-    print('[WARNING] 访问失败次数达到上限')
+        for item in return_articles:
+            if end_aid in exist_aid:
+                # search newest finish
+                return article_l
+            article_l.append(item)
+        times_try = 5
+        logging.info(f'already search articles: {len(article_l)}')
+        break
+    logging.warning('访问失败次数达到上限')
     return article_l
     
     
@@ -69,12 +80,14 @@ def request_once(fakeid, token, begin_id = 0, count = 5):
         }  
     
     resp = requests.get(url, headers=headers, params = params, verify=False)
+    
     # 微信流量控制, 退出
     if resp.json()['base_resp']['ret'] == 200013:
-        #print("frequencey control, stop at {}".format(str(begin)))
+        logging.debug(f"frequencey control for fakeid[{fakeid}]")
         raise WechatNetworkError()
     msg = resp.json()
     if not "app_msg_list" in msg:
+        logging.debug(msg)
         raise WechatUndifineError()
     if len(msg["app_msg_list"]) == 0:
         return []
@@ -94,5 +107,5 @@ def request_once(fakeid, token, begin_id = 0, count = 5):
 
 
 if __name__ == '__main__':
-    article_l = get_all_articles('MjM5MDM5MzEyMQ==', '1804298720')
+    article_l = get_all_articles('MjM5OTUyMTg2MA==', '1713192253')
     write_csv('./rizhao.csv', article_l)
