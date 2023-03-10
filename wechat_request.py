@@ -4,7 +4,6 @@ import time
 import random
 from error import *
 import sys
-from csv_io import write_csv
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from urllib.parse import urlparse, parse_qs
 import logging
