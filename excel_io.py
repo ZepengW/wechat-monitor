@@ -2,9 +2,10 @@ import pandas as pd
 import os
 import logging
 import openpyxl
+from collections import defaultdict
 
 def search_aid(excel_path):
-    aid_dict = dict()
+    aid_dict = defaultdict(list)
     if not os.path.isfile(excel_path):
         logging.debug(f'file not exist: {excel_path}')
         return aid_dict
@@ -112,9 +113,31 @@ def read_excel(file_path):
 
 def read_all_columns(file_path, column_name):
     workbook = openpyxl.load_workbook(file_path)
-    data_dict = {}
-    for sheet_name in workbook.sheetnames:
-        data_dict[sheet_name] = read_column(file_path, sheet_name, column_name)
+    # 创建一个字典，用于存储每个sheet的数据
+    data_dict = defaultdict(list)
+
+    # 遍历所有sheet
+    for sheet in workbook.worksheets:
+        # 检查该sheet是否包含指定的列名
+        col_index = 0
+        for col in sheet.iter_cols(min_row=1, max_row=1, values_only=True):
+            col_index += 1
+            if column_name in col:
+                break
+        if sheet.cell(row=1, column=col_index).value != column_name:
+            # 如果不包含，将该sheet的值设置为空列表
+            data_dict[sheet.title] = []
+            continue
+
+        # 获取指定列的数据
+        col_data = []
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            col_data.append(row[col_index - 1])
+
+        # 将数据添加到字典中
+        data_dict[sheet.title] = col_data
+
+    # 返回包含所有sheet数据的字典
     return data_dict
 
 
@@ -122,13 +145,13 @@ def read_all_columns(file_path, column_name):
 
 if __name__ == '__main__':
     #search_aid('/Users/wangzepeng/Downloads/test.xlsx')
-    data = [
-    {"姓名": "A22A1", "年龄": 22, "性别": "男"},
-    {"姓名": "BB222", "年龄": 28, "性别": "男"},
-    {"姓名": "CC223", "年龄": 25, "性别": "女"}
-    ]
+    # data = [
+    # {"姓名": "A22A1", "年龄": 22, "性别": "男"},
+    # {"姓名": "BB222", "年龄": 28, "性别": "男"},
+    # {"姓名": "CC223", "年龄": 25, "性别": "女"}
+    # ]
 
-    write_to_excel("example.xlsx", "Sheet", data)
-    write_to_excel("example.xlsx", "Sheet1", data)
-    read_excel("example.xlsx", "Sheet1")
+    # write_to_excel("example.xlsx", "Sheet", data)
+    # write_to_excel("example.xlsx", "Sheet1", data)
+    read_all_columns("./wechat_report.xlsx", 'aid')
     

@@ -21,7 +21,10 @@ def cookies_str2dict(cookies_str, cookies_dict = None):
     else:
         res_dict = cookies_dict
     for cookies in cookies_str.split(';'):
-        name, value = cookie.strip().split('=', 1)
+        try:
+            name, value = cookies.strip().split('=', 1)
+        except:
+            continue
         res_dict[name] = value
     return res_dict
 
@@ -132,7 +135,7 @@ def create_session(cookies_str):
     s.headers.update(
         {
             "User-Agent": 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36',
-            "Cookie": cookies_str
+            "Cookie": cookies_str if type(cookies_str) is str else cookies_dict2str(cookies_str)
         }
     )
     # login
@@ -159,7 +162,7 @@ def create_session(cookies_str):
     sys.exit(0)
 
 
-def get_articles_session(session:requests.Session, fakeid, name='', exist_aid = []):
+def get_articles_session(session:requests.Session, fakeid, token, name='', exist_aid = []):
     """
     
     """
@@ -169,7 +172,7 @@ def get_articles_session(session:requests.Session, fakeid, name='', exist_aid = 
     while(times_try > 0):
         try:
             time.sleep(random.randint(3,15))
-            return_articles = request_once(session, fakeid, len(article_l), count)
+            return_articles = request_once_session(session, fakeid, token, len(article_l), count)
             #print(return_articles)
         except WechatNetworkError:
             t_wait = 120
@@ -185,10 +188,13 @@ def get_articles_session(session:requests.Session, fakeid, name='', exist_aid = 
             logging.debug(f'[{name if name == "" else fakeid}] search finish')
             return article_l
         for item in return_articles:
-            if end_aid in exist_aid:
+            if item['aid'] in exist_aid:
                 # search newest finish
                 return article_l
             article_l.append(item)
+        # # check if reach max_num
+        # if max_num > 0 and len(article_l) > max_num:
+        #     return article_l[:max_num]
         times_try = 5
         logging.debug(f'already search articles: {len(article_l)}')
         break
@@ -223,7 +229,7 @@ def request_once_session(session:requests.Session, fakeid, token, begin_id = 0, 
         "f": "json",
         "ajax": "1"
         } 
-    resp = session.get(url, headers=headers, params = params, verify=False)
+    resp = session.get(url, params = params, verify=False)
     
     # 微信流量控制, 退出
     if resp.json()['base_resp']['ret'] == 200013:
@@ -249,6 +255,8 @@ def request_once_session(session:requests.Session, fakeid, token, begin_id = 0, 
         })
     return article_l
 
+def get_cookies_dict(session):
+    return requests.utils.dict_from_cookiejar(session.cookies)
 
 if __name__ == '__main__':
     cookies_str = 'ptui_loginuin=1371946804; RK=htes1sHRPN; ptcz=a3d21d75959b623656aaf3d38ca3bcb81becb27a3fe5b88388508e5d255e9b5e; tvfe_boss_uuid=d6c5598666965073; pgv_pvid=5496426140; o_cookie=1371946804; pac_uid=1_1371946804; ua_id=7W6H0n1CFOdFthOwAAAAAKOdm07Oq_oHrMgVp6s3EyU=; wxuin=77647480655089; uuid=c33c01ddbcba6273ecf26494b18a7b8d; bizuin=3890910163; ticket=4940d1f627494592c5268e613265f48d9f1de3ff; ticket_id=gh_a67b7e12998e; slave_bizuin=3890910163; cert=rHs0QqmnR6AYHkH6XkogdgeLGgif3EGB; noticeLoginFlag=1; remember_acct=oliver_ck%40outlook.com; rand_info=CAESIP9SfzlJqj3BQkL0FuGDbY9pRTgRlFSe317Mn7GuyH3K; data_bizuin=3890910163; data_ticket=wQku4QfMRJuFV5JS9B+skw6bOa4KWsgdM2b2yD91c0K6lE7JEZZaAzVCWOIJ7iNh; slave_sid=UUhrSlJxc05LVW9paUJabVc0YTY3bGJiS0RiMjNqcjFjaHBVRTNsajRScWc1TWpQdXFoQW5BRjJZMEdlUko2VmY4c1BzQUIwWGRrZ0VQRVFYaVlGaF9pMkpVdFo4NFlWZ3dfSHpWX1M0cFJESzRtTWxOOFpXaE9VeGZQdGRFbTlqOUFHTWhuZTdHNFNmY0ts; slave_user=gh_a67b7e12998e; xid=7ed49574623f7156efb33390fbfcbbfd; openid2ticket_o05Pq5-QxhkTYn3M78Z0_yduOsCI=AFaipTt96ERDcluq9tC1uizfkVyJsPSOUFL9eu5Ardg=; mm_lang=zh_CN; uin=o1371946804; skey=@8pyRF3FET'
