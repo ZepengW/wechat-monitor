@@ -2,7 +2,7 @@ import os
 import logging
 import openpyxl
 from collections import defaultdict
-from openpyxl.styles import Hyperlink
+# from openpyxl.styles import Hyperlink
 
 def get_history_aid(excel_path):
     aid_dict = defaultdict(list)
