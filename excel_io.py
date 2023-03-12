@@ -2,17 +2,37 @@ import os
 import logging
 import openpyxl
 from collections import defaultdict
+from openpyxl.styles import Hyperlink
 
-def search_aid(excel_path):
+def get_history_aid(excel_path):
     aid_dict = defaultdict(list)
     if not os.path.isfile(excel_path):
-        logging.debug(f'file not exist: {excel_path}')
+        logging.warning(f'History excel not exist: {excel_path}')
         return aid_dict
-    aid_dict = read_all_columns(excel_path, 'aid')
-    return aid_dict
+    
+    # 遍历 excel 获取每个account 的历史history
+    # 打开Excel文件
+    workbook = load_workbook(filename=excel_path)
+    # 选择工作表
+    sheet = workbook['Sheet1']
+    # 获取表头
+    header = [cell.value for cell in sheet[1]]
+    # 获取公众号和文章ID列的索引
+    gzh_index = header.index('公众号')
+    article_id_index = header.index('文章ID')
+    # 构建字典
+    data_dict = {}
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        gzh_name = row[gzh_index]
+        article_id = row[article_id_index]
+        if gzh_name not in data_dict:
+            data_dict[gzh_name] = [article_id]
+        else:
+            data_dict[gzh_name].append(article_id)
+    return data_dict
 
 
-def write_to_excel(file_path, sheet_name, data):
+def write_to_excel(file_path, data, sheet_name = 'Sheet1'):
     """将数据写入Excel文件"""
     # 检查文件是否存在，如果不存在则创建一个新的Excel文件
     if not os.path.isfile(file_path):
@@ -34,6 +54,18 @@ def write_to_excel(file_path, sheet_name, data):
         headers = list(data[0].keys())
         for col, header in enumerate(headers, start=1):
             new_sheet.cell(row=1, column=col, value=header)
+        # 将列宽调整为自适应列宽
+        for col in new_sheet.columns:
+            max_length = 0
+            column = col[0].column_letter  # 获取列字母
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(cell.value)
+                except:
+                    pass
+            adjusted_width = (max_length + 2) * 1.2  # 为每个单元格添加留白，乘以1.2是为了更好的显示
+            new_sheet.column_dimensions[column].width = adjusted_width
     else:
         for col in range(1, new_sheet.max_column + 1):
             headers.append(new_sheet.cell(row=1, column=col).value)
@@ -53,50 +85,55 @@ def write_to_excel(file_path, sheet_name, data):
     for row, item in enumerate(data, start=2):
         for col, value in item.items():
             col_index = headers.index(col) + 1
-            new_sheet.cell(row=row, column=col_index, value=value)
+            if col == '文章链接':
+                # 如果该列是“文章链接”，则将单元格设置为超链接
+                hyperlink = openpyxl.utils.cell.coordinate_from_string(f'{openpyxl.utils.get_column_letter(col_index)}{row}')
+                new_sheet[hyperlink].value = '链接'
+                new_sheet[hyperlink].hyperlink = value
+            else:
+                new_sheet.cell(row=row, column=col_index, value=value)
 
     # 保存Excel文件
     workbook.save(file_path)
 
-    print(f"已将数据写入{sheet_name}工作表，保存在{file_path}文件中！")
 
 
-def read_excel(file_path, sheet_name):
-    workbook = openpyxl.load_workbook(file_path)
-    sheet = workbook[sheet_name]
-    rows = list(sheet.rows)
-    headers = [cell.value for cell in rows[0]]
+# def read_excel(file_path, sheet_name):
+#     workbook = openpyxl.load_workbook(file_path)
+#     sheet = workbook[sheet_name]
+#     rows = list(sheet.rows)
+#     headers = [cell.value for cell in rows[0]]
 
-    result = []
-    for row in rows[1:]:
-        item = {}
-        for col, cell in enumerate(row):
-            item[headers[col]] = cell.value
-        result.append(item)
-    return result
+#     result = []
+#     for row in rows[1:]:
+#         item = {}
+#         for col, cell in enumerate(row):
+#             item[headers[col]] = cell.value
+#         result.append(item)
+#     return result
 
-def read_excel(file_path):
-    """_summary_
+# def read_excel(file_path):
+#     """_summary_
 
-    Args:
-        file_path (_type_): _description_
+#     Args:
+#         file_path (_type_): _description_
 
-    Returns:
-        Dict: [sheet_name]:[sheet_data]
-    """
-    workbook = openpyxl.load_workbook(file_path)
-    result = []
-    for sheet in workbook:
-        rows = list(sheet.rows)
-        headers = [cell.value for cell in rows[0]]
-        sheet_data = []
-        for row in rows[1:]:
-            item = {}
-            for col, cell in enumerate(row):
-                item[headers[col]] = cell.value
-            sheet_data.append(item)
-        result.append({sheet.title: sheet_data})
-    return result
+#     Returns:
+#         Dict: [sheet_name]:[sheet_data]
+#     """
+#     workbook = openpyxl.load_workbook(file_path)
+#     result = []
+#     for sheet in workbook:
+#         rows = list(sheet.rows)
+#         headers = [cell.value for cell in rows[0]]
+#         sheet_data = []
+#         for row in rows[1:]:
+#             item = {}
+#             for col, cell in enumerate(row):
+#                 item[headers[col]] = cell.value
+#             sheet_data.append(item)
+#         result.append({sheet.title: sheet_data})
+#     return result
 
 
 def read_all_columns(file_path, column_name):
