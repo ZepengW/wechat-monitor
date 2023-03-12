@@ -143,7 +143,7 @@ def create_session(cookies_str):
     # check if login success
     if not 'token=' in url_redict_home:
         logging.error('Login Fail, please update login cookies')
-        sys.exit(0)
+        return None, None
     # get token
     # 解析url
     parsed_url = urlparse(url_redict_home)
@@ -158,7 +158,7 @@ def create_session(cookies_str):
         return s, token
     # login fail
     logging.error(f'Login Fail with Status Code [{resp.status_code}]')
-    sys.exit(0)
+    return None, None
 
 
 def get_articles_session(session:requests.Session, fakeid, token, name='', exist_aid = []):
@@ -176,11 +176,11 @@ def get_articles_session(session:requests.Session, fakeid, token, name='', exist
         except WechatNetworkError:
             t_wait = 120
             times_try -= 1
-            logging.warning(f'Network Error [Left try times: {times_try}], waiting {t_wait}s')
+            logging.warning(f'网络错误 [剩余尝试次数: {times_try}], 等待时间 {t_wait}秒')
             time.sleep(t_wait)
             continue
         except:
-            logging.error("Unexpected error:", sys.exc_info()[0])
+            logging.error("未知HTTP错误:", sys.exc_info()[0])
             sys.exit()
         if len(return_articles) == 0:
             #搜索完成
@@ -247,9 +247,10 @@ def request_once_session(session:requests.Session, fakeid, token, begin_id = 0, 
         link_str = item['link']
         aid = str(item["aid"])
         article_l.append({
-            'time': time_str,
-            'title': title_str,
-            'link': link_str,
+            '公众号': fakeid,
+            '发布时间': time_str,
+            '文章标题': title_str,
+            '文章链接': link_str,
             'aid': aid
         })
     return article_l

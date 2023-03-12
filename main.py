@@ -9,7 +9,6 @@ from wechat_monitor import WechatMonitor
 
 def main(args):
     wm = WechatMonitor(args.config, output_path= args.output)
-    wm.check_ready()
     wm.get_newest()
     wm.listen_wechats()
 
