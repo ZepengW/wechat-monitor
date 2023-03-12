@@ -1,4 +1,3 @@
-import pandas as pd
 import os
 import logging
 import openpyxl
@@ -12,17 +11,6 @@ def search_aid(excel_path):
     aid_dict = read_all_columns(excel_path, 'aid')
     return aid_dict
 
-
-def write_csv(path, data_list, mode = 'w'):
-    df = pd.DataFrame(data_list)
-    if mode == 'w':
-        df.to_csv(path, ',', index=False)
-    elif mode == 'a':
-        df_old = pd.read_csv(path)
-        df = pd.concat([df, df_old])
-        df = df.drop_duplicates()
-        df = df.sort_values('time')
-        df.to_csv(path, ',', index=False)
 
 def write_to_excel(file_path, sheet_name, data):
     """将数据写入Excel文件"""
