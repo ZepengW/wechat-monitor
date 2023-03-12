@@ -32,16 +32,11 @@ class WechatMonitor:
         """
         logging.info(f'开始监听， 监听公众号数目{len(self.fake_id_dict)}!!!')
         logging.info(f'监听列表: {self.fake_id_dict.keys()}')
-        # save cfg every 1 hour,
-        iterval_save_cfg = 3600 // itervals[1]
-        times_save_cfg = 0
         while len(self.fake_id_dict):
-            if times_save_cfg % iterval_save_cfg == 0:
-                # update cookies
-                times_save_cfg = 0
-                self.cfg_dict['cookies'] = get_cookies_dict(self.session)
-                with open(self.cfg_path, 'w') as f:
-                    yaml.dump(self.cfg_dict, f)
+            # update cfg
+            self.cfg_dict['cookies'] = get_cookies_dict(self.session)
+            with open(self.cfg_path, 'w') as f:
+                yaml.dump(self.cfg_dict, f, default_flow_style=False, encoding='ucf-8', allow_unicode=True)
                     
             for account_name in self.fake_id_dict.keys():
                 print(f'\r[{time.asctime( time.localtime(time.time()))}] 检索公众号[{account_name}]中', end='')
@@ -51,7 +46,7 @@ class WechatMonitor:
                     self.report(account_name, article_l)
                 # 随机时延
                 time.sleep(random.randint(itervals[0] // 2, itervals[0] * 2))
-            times_save_cfg += 1
+
             # 随机时延
             time.sleep(random.randint(itervals[1] // 2, itervals[1] * 2))
     
