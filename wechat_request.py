@@ -174,7 +174,7 @@ def get_articles_session(session:requests.Session, fakeid, token, name='', exist
             return_articles = request_once_session(session, fakeid, token, len(article_l), count)
             #print(return_articles)
         except WechatNetworkError:
-            t_wait = 120
+            t_wait = 600 * (2 **(5 - times_try))
             times_try -= 1
             logging.warning(f'网络错误 [剩余尝试次数: {times_try}], 等待时间 {t_wait}秒')
             time.sleep(t_wait)
