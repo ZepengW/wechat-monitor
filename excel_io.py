@@ -32,6 +32,7 @@ def get_history_aid(excel_path):
             data_dict[gzh_name] = [article_id]
         else:
             data_dict[gzh_name].append(article_id)
+    workbook.close()
     return data_dict
 
 
@@ -103,6 +104,7 @@ def write_to_excel(file_path, data, sheet_name = 'Sheet'):
     
     # 保存Excel文件
     workbook.save(file_path)
+    workbook.close()
 
 
 
@@ -169,7 +171,7 @@ def read_all_columns(file_path, column_name):
 
         # 将数据添加到字典中
         data_dict[sheet.title] = col_data
-
+    workbook.close()
     # 返回包含所有sheet数据的字典
     return data_dict
 
