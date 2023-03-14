@@ -8,13 +8,13 @@ import os
 from func import *
 
 class WechatMonitor:
-    def __init__(self, cfg_path, cookies_str=None, history_path = './wechat_report.xlsx', output_path = './wechat_report.xlsx', itervals = (60, 600)):
+    def __init__(self, cfg_path, cookies_str=None, output_path = './wechat_report.xlsx', itervals = (60, 600)):
         logging.info('初始化 [WechatMonitor]')
         # cfg_path
         self.cfg_path = cfg_path
         self.load_cfg()
         # list history
-        self.aid_history = get_history_aid(history_path)
+        self.aid_history = get_history_aid(output_path)
         # config new cookies
         if cookies_str is not None:
             self.cfg_dict['cookies'] = cookies_str2dict(cookies_str)

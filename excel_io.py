@@ -15,7 +15,7 @@ def get_history_aid(excel_path):
     
     # 遍历 excel 获取每个account 的历史history
     # 打开Excel文件
-    workbook = load_workbook(filename=excel_path)
+    workbook = openpyxl.load_workbook(filename=excel_path)
     # 选择工作表
     sheet = workbook['Sheet']
     # 获取表头
@@ -24,7 +24,7 @@ def get_history_aid(excel_path):
     gzh_index = header.index('公众号')
     article_id_index = header.index('文章ID')
     # 构建字典
-    data_dict = {}
+    data_dict = aid_dict
     for row in sheet.iter_rows(min_row=2, values_only=True):
         gzh_name = row[gzh_index]
         article_id = row[article_id_index]
@@ -188,6 +188,7 @@ if __name__ == '__main__':
     {"公众号": "A22A1", "发布时间": "2023-03-09 11:30:39", "文章标题": "shuiyuan", '文章链接':'http://www.shuiyuan.com', '文章ID':'12'},
     {"公众号": "A22A1", "发布时间": "2023-04-09 12:28:39", "文章标题": "weixin", '文章链接':'http://www.wechat.com', '文章ID':'12'},    ]
     write_to_excel('./test.xlsx', data2)
+    get_history_aid(excel_path)
     # write_to_excel("example.xlsx", "Sheet", data)
     # write_to_excel("example.xlsx", "Sheet1", data)
     #read_all_columns("./wechat_report.xlsx", 'aid')
