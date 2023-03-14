@@ -18,11 +18,11 @@ class WechatMonitor:
         # config new cookies
         if cookies_str is not None:
             self.cfg_dict['cookies'] = cookies_str2dict(cookies_str)
-        # check ready
-        self.check_ready()
-
         self.output_path = output_path
         self.itervals = itervals
+
+        # check ready
+        self.check_ready()
         logging.info('初始化 [WechatMonitor] 完成')
 
 
