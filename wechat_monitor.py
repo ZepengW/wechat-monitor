@@ -1,5 +1,5 @@
 from excel_io import get_history_aid, write_to_excel
-from wechat_request import create_session, get_articles_session, get_cookies_dict, cookies_str2dict, request_once_session
+from wechat_request import create_session, get_articles_session, get_cookies_dict, cookies_str2dict, get_articles_once_session
 import time
 import random
 import logging
@@ -8,7 +8,7 @@ import os
 
 
 class WechatMonitor:
-    def __init__(self, cfg_path, cookies_str=None, history_path = './wechat_report.xlsx', output_path = './wechat_report.xlsx'):
+    def __init__(self, cfg_path, cookies_str=None, history_path = './wechat_report.xlsx', output_path = './wechat_report.xlsx', itervals = (60, 600)):
         logging.info('初始化 [WechatMonitor]')
         # cfg_path
         self.cfg_path = cfg_path
@@ -22,14 +22,17 @@ class WechatMonitor:
         self.check_ready()
 
         self.output_path = output_path
+        self.itervals = itervals
         logging.info('初始化 [WechatMonitor] 完成')
 
-    def listen_wechats(self, itervals = (10, 600)):
+
+    def listen_wechats(self):
         """_summary_
 
         Args:
             itervals (tuple, optional): (itervals for fakeid, itervals for times). Defaults to (10, 600).
         """
+        itervals = self.itervals
         logging.info(f'开始监听， 监听公众号数目{len(self.fake_id_dict)}!!!')
         logging.info(f'监听列表: {self.fake_id_dict.keys()}')
         while len(self.fake_id_dict):
@@ -39,16 +42,25 @@ class WechatMonitor:
                 yaml.dump(self.cfg_dict, f, default_flow_style=False, encoding='ucf-8', allow_unicode=True)
                     
             for account_name in self.fake_id_dict.keys():
-                print(f'\r[{time.asctime( time.localtime(time.time()))}] 检索公众号[{account_name}]中', end='')
+                print(f'\r\033[K [{time.asctime( time.localtime(time.time()))}] 检索公众号[{account_name}]中', end='')
                 fake_id = self.fake_id_dict[account_name]
                 article_l = get_articles_session(self.session, fake_id, self.token, exist_aid=self.aid_history.get(account_name, []))
                 if len(article_l) != 0:
                     self.report(account_name, article_l)
                 # 随机时延
-                time.sleep(random.randint(itervals[0] // 2, itervals[0] * 2))
-
+                t_wait = random.randint(itervals[0] // 2, itervals[0] * 2)
+                while t_wait:
+                    print(f'\r\033[K 公众号[{account_name}]检索完成，等待{t_wait}s', end='')
+                    time.sleep(1)
+                    t_wait -= 1
+                continue
             # 随机时延
-            time.sleep(random.randint(itervals[1] // 2, itervals[1] * 2))
+            t_wait = random.randint(itervals[1] // 2, itervals[1] * 2)
+            while t_wait:
+                print(f'\r\033[K 本轮检索结束，下一轮于{t_wait}s后开始', end='')
+                time.sleep(1)
+                t_wait -= 1
+            continue
     
     def get_newest(self):
         # 检查没有历史记录的fakeid
@@ -57,18 +69,24 @@ class WechatMonitor:
             if name in self.aid_history.keys():
                 continue
             print(f'\r[{time.asctime( time.localtime(time.time()))}] 检索公众号[{name}]历史文章中', end='')
-            article_l = request_once_session(self.session, self.fake_id_dict[name], self.token)
+            article_l = get_articles_once_session(self.session, self.fake_id_dict[name], self.token)
             if len(article_l) > 0:
-                self.report(self.fake_id_dict[name], article_l)
-        print('')
-        logging.info('[初始化] 检索历史文章 [完成]')
+                self.report(name, article_l)
+            # 随机时延
+            t_wait = random.randint(self.itervals[0] // 2, self.itervals[0] * 2)
+            while t_wait:
+                print(f'\r\033[K 公众号[{account_name}]检索完成，等待{t_wait}s', end='')
+                time.sleep(1)
+                t_wait -= 1
+            continue
+        logging.info('[初始化] 检索历史文章 [完成]                                ')
 
     def report(self, account_name, article_l):
-        print('')
+        print("\r\033[K", end="")
         logging.warning(f'[监听到新文章!] 公众号[{account_name}] 数量[{len(article_l)}]')
         for article in article_l[::-1]:
-            self.aid_history[account_name].append(article['aid'])
-            logging.warning(article["link"])
+            self.aid_history[account_name].append(article['文章ID'])
+            logging.warning(article["文章链接"])
             article['公众号'] = account_name
         write_to_excel(self.output_path, article_l)
         logging.info(f'[已写入日志]')
@@ -87,7 +105,7 @@ class WechatMonitor:
     def check_ready(self):
         if self.cfg_dict.get('cookies', None) == None:
             logging.warning('请输入登录cookies')
-            self.cfg_dict = cookies_str2dict(input())
+            self.cfg_dict['cookies'] = cookies_str2dict(input())
         while(1):
             # login
             self.session, self.token = create_session(self.cfg_dict.get('cookies',''))
@@ -95,7 +113,7 @@ class WechatMonitor:
                 logging.info('登录成功')
                 break
             logging.warning('[登录失败] 请更新cookies(输入字符串):')
-            self.cfg_dict.update(cookies_str2dict(input()))
+            self.cfg_dict['cookies'].update(cookies_str2dict(input()))
         print('是否要监听新的公众号？([n]/y)')
         if (input() == 'y') and (len(self.fake_id_dict) == 0):
             logging.warning('请按如下格式输入新的微信公众号: [公众号]:[fakeid], 输入任意按键退出')

@@ -2,6 +2,7 @@ import os
 import logging
 import openpyxl
 from collections import defaultdict
+from openpyxl.styles import Font, colors
 # from openpyxl.styles import Hyperlink
 
 def get_history_aid(excel_path):
@@ -14,7 +15,7 @@ def get_history_aid(excel_path):
     # 打开Excel文件
     workbook = load_workbook(filename=excel_path)
     # 选择工作表
-    sheet = workbook['Sheet1']
+    sheet = workbook['Sheet']
     # 获取表头
     header = [cell.value for cell in sheet[1]]
     # 获取公众号和文章ID列的索引
@@ -32,7 +33,7 @@ def get_history_aid(excel_path):
     return data_dict
 
 
-def write_to_excel(file_path, data, sheet_name = 'Sheet1'):
+def write_to_excel(file_path, data, sheet_name = 'Sheet'):
     """将数据写入Excel文件"""
     # 检查文件是否存在，如果不存在则创建一个新的Excel文件
     if not os.path.isfile(file_path):
@@ -87,9 +88,12 @@ def write_to_excel(file_path, data, sheet_name = 'Sheet1'):
             col_index = headers.index(col) + 1
             if col == '文章链接':
                 # 如果该列是“文章链接”，则将单元格设置为超链接
-                hyperlink = openpyxl.utils.cell.coordinate_from_string(f'{openpyxl.utils.get_column_letter(col_index)}{row}')
-                new_sheet[hyperlink].value = '链接'
-                new_sheet[hyperlink].hyperlink = value
+                cell = new_sheet.cell(row=row, column=col_index, value="链接")
+                cell.font = Font(color=colors.BLUE, underline='single')
+                cell.hyperlink = value
+                # hyperlink = openpyxl.utils.cell.coordinate_from_string(f'{openpyxl.utils.get_column_letter(col_index)}{row}')
+                # new_sheet[hyperlink].value = '链接'
+                # new_sheet[hyperlink].hyperlink = value
             else:
                 new_sheet.cell(row=row, column=col_index, value=value)
 

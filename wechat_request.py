@@ -34,97 +34,6 @@ def cookies_dict2str(cookies_dict):
     return cookies_str.strip('; ')
 
 
-
-def get_articles(fakeid, token, name='', exist_aid = None):
-    """
-    
-    """
-    count = 5
-    article_l = []
-    times_try = 5  # 尝试次数
-    while(times_try > 0):
-        try:
-            time.sleep(random.randint(3,15))
-            return_articles = request_once(fakeid, token, len(article_l), count)
-            #print(return_articles)
-        except WechatNetworkError:
-            t_wait = 120
-            times_try -= 1
-            logging.warning(f'Network Error [Left try times: {times_try}], waiting {t_wait}s')
-            time.sleep(t_wait)
-            continue
-        except:
-            print("Unexpected error:", sys.exc_info()[0])
-            sys.exit()
-        if len(return_articles) == 0:
-            #搜索完成
-            print(f'[{name if name == "" else fakeid}] search finish')
-            return article_l
-        for item in return_articles:
-            if end_aid in exist_aid:
-                # search newest finish
-                return article_l
-            article_l.append(item)
-        times_try = 5
-        logging.info(f'already search articles: {len(article_l)}')
-        break
-    logging.warning('访问失败次数达到上限')
-    return article_l
-    
-    
-
-
-#
-def request_once(fakeid, token, cookies_dict, begin_id = 0, count = 5):
-    '''request articles list once
-    params:
-        fakeid: related to account
-        token: related to account
-        begin_id: begin to search from [begin_id]th article
-        count: number of articles returned
-    '''
-    params = {
-        "action": "list_ex",
-        "begin": f"{begin_id}",
-        "count": f"{count}",
-        "fakeid":  fakeid,
-        "type": "9",
-        "token": token,
-        "lang": "zh_CN",
-        "f": "json",
-        "ajax": "1"
-        }  
-    headers = {
-        "User-Agent": 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36',
-        "Cookie": cookies_dict2str(cookies_dict=cookies_dict)
-    }
-    resp = requests.get(url, headers=headers, params = params, verify=False)
-    
-    # 微信流量控制, 退出
-    if resp.json()['base_resp']['ret'] == 200013:
-        logging.debug(f"frequencey control for fakeid[{fakeid}]")
-        raise WechatNetworkError()
-    msg = resp.json()
-    if not "app_msg_list" in msg:
-        logging.debug(msg)
-        raise WechatUndifineError()
-    if len(msg["app_msg_list"]) == 0:
-        return []
-    article_l = []
-    for item in msg["app_msg_list"]:
-        time_str = time.strftime("%Y-%m-%d %H:%M:%S",time.localtime(item['create_time']))
-        title_str = item['title']
-        link_str = item['link']
-        aid = str(item["aid"])
-        article_l.append({
-            'time': time_str,
-            'title': title_str,
-            'link': link_str,
-            'aid': aid
-        })
-    return article_l
-
-
 def create_session(cookies_str):
     """ http resquest with session
     Args:
@@ -161,23 +70,25 @@ def create_session(cookies_str):
     return None, None
 
 
-def get_articles_session(session:requests.Session, fakeid, token, name='', exist_aid = []):
-    """
-    
-    """
+def get_articles_once_session(session:requests.Session, fakeid, token, name='', exist_aid = []):
     count = 5
     article_l = []
     times_try = 5  # 尝试次数
     while(times_try > 0):
         try:
-            time.sleep(random.randint(3,15))
             return_articles = request_once_session(session, fakeid, token, len(article_l), count)
             #print(return_articles)
         except WechatNetworkError:
-            t_wait = 600 * (2 **(5 - times_try))
+            t_wait = 900 * (2 **(5 - times_try))
             times_try -= 1
-            logging.warning(f'网络错误 [剩余尝试次数: {times_try}], 等待时间 {t_wait}秒')
-            time.sleep(t_wait)
+            print("\r\033[K", end="")
+            #logging.warning(f'网络错误 [剩余尝试次数: {times_try}], 等待时间 {t_wait}秒')
+            while t_wait:
+                mins, secs = divmod(t_wait, 60)
+                timer = '{:02d}:{:02d}'.format(mins, secs)
+                print(f'访问受限 [剩余尝试次数: {times_try}], 等待时间 {timer}', end="\r")
+                time.sleep(1)
+                t_wait -= 1
             continue
         except:
             logging.error("未知HTTP错误:", sys.exc_info()[0])
@@ -187,16 +98,51 @@ def get_articles_session(session:requests.Session, fakeid, token, name='', exist
             logging.debug(f'[{name if name == "" else fakeid}] search finish')
             return article_l
         for item in return_articles:
-            if item['aid'] in exist_aid:
+            if item['文章ID'] in exist_aid:
                 # search newest finish
                 return article_l
             article_l.append(item)
-        # # check if reach max_num
-        # if max_num > 0 and len(article_l) > max_num:
-        #     return article_l[:max_num]
+        return article_l
+    logging.warning('访问失败次数达到上限')
+    return article_l
+
+def get_articles_session(session:requests.Session, fakeid, token, name='', exist_aid = []):
+    """
+    
+    """
+    count = 5
+    article_l = []
+    times_try = 5  # 尝试次数
+    while(times_try > 0):
+        try:
+            return_articles = request_once_session(session, fakeid, token, len(article_l), count)
+            #print(return_articles)
+        except WechatNetworkError:
+            t_wait = 900 * (2 **(5 - times_try))
+            times_try -= 1
+            print("\r\033[K", end="")
+            #logging.warning(f'网络错误 [剩余尝试次数: {times_try}], 等待时间 {t_wait}秒')
+            while t_wait:
+                mins, secs = divmod(t_wait, 60)
+                timer = '{:02d}:{:02d}'.format(mins, secs)
+                print(f'访问受限 [剩余尝试次数: {times_try}], 等待时间 {timer}', end="\r")
+                time.sleep(1)
+                t_wait -= 1
+            continue
+        except:
+            logging.error("未知HTTP错误:", sys.exc_info()[0])
+            sys.exit()
+        if len(return_articles) == 0:
+            #搜索完成
+            logging.debug(f'[{name if name == "" else fakeid}] search finish')
+            return article_l
+        for item in return_articles:
+            if item['文章ID'] in exist_aid:
+                # search newest finish
+                return article_l
+            article_l.append(item)
         times_try = 5
         logging.debug(f'already search articles: {len(article_l)}')
-        break
     logging.warning('访问失败次数达到上限')
     return article_l
 
@@ -251,7 +197,7 @@ def request_once_session(session:requests.Session, fakeid, token, begin_id = 0, 
             '发布时间': time_str,
             '文章标题': title_str,
             '文章链接': link_str,
-            'aid': aid
+            '文章ID': aid
         })
     return article_l
 
