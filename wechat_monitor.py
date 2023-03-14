@@ -40,13 +40,13 @@ class WechatMonitor:
             self.cfg_dict['cookies'] = get_cookies_dict(self.session)
             self.update_cfg()
             for i, account_name in enumerate(self.fake_id_dict.keys()):
-                print(f'\r\033[K [{time.asctime( time.localtime(time.time()))}] 检索公众号[{account_name}]中 [{i+1}/{len(fake_id_dict)}]', end='')
+                print(f'\r\033[K [{time.asctime( time.localtime(time.time()))}] 检索公众号[{account_name}]中 [{i+1}/{len(self.fake_id_dict)}]', end='')
                 fake_id = self.fake_id_dict[account_name]
                 article_l = get_articles_session(self.session, fake_id, self.token, exist_aid=self.aid_history.get(account_name, []))
                 if len(article_l) != 0:
                     self.report(account_name, article_l)
                 # 随机时延
-                random_wait(itervals[0], f'公众号[{account_name}][{i+1}/{len(fake_id_dict)}]检索完成, 等待')
+                random_wait(itervals[0], f'公众号[{account_name}][{i+1}/{len(self.fake_id_dict)}]检索完成, 等待')
             # 随机时延
             random_wait(itervals[1], '本轮检索结束，下一轮等待：')
 
@@ -61,12 +61,12 @@ class WechatMonitor:
         for i, name  in enumerate(self.fake_id_dict.keys()):
             if name in self.aid_history.keys():
                 continue
-            flush_print(f'[{time.asctime( time.localtime(time.time()))}] 检索公众号[{name}]历史文章中 [{i+1}/{len(fake_id_dict)}]')
+            flush_print(f'[{time.asctime( time.localtime(time.time()))}] 检索公众号[{name}]历史文章中 [{i+1}/{len(self.fake_id_dict)}]')
             article_l = get_articles_once_session(self.session, self.fake_id_dict[name], self.token)
             if len(article_l) > 0:
                 self.report(name, article_l)
             # 随机时延
-            random_wait(self.itervals[0], f'公众号[{name}][{i+1}/{len(fake_id_dict)}]检索完成, 等待')
+            random_wait(self.itervals[0], f'公众号[{name}][{i+1}/{len(self.fake_id_dict)}]检索完成, 等待')
         logging.info('[初始化] 检索历史文章 [完成]                                ')
 
     def report(self, account_name, article_l):
