@@ -2,14 +2,14 @@
 import random
 import time
 
-def random_wait(t_wait, info):
+def random_wait(t_wait, info, random_deviation = 60):
     """random wait with dynamic print 
 
     Args:
         t_wait (_type_): _description_
         info (_type_): _description_
     """
-    t_wait = random.randint(t_wait // 2, t_wait * 2)
+    t_wait = random.randint(t_wait -  random_deviation, t_wait + random_deviation)
     while t_wait:
         flush_print(f'{info} {convert_seconds_to_hms(t_wait)}')
         time.sleep(1)
