@@ -5,7 +5,7 @@ import random
 import logging
 import yaml
 import os
-
+from func import *
 
 class WechatMonitor:
     def __init__(self, cfg_path, cookies_str=None, history_path = './wechat_report.xlsx', output_path = './wechat_report.xlsx', itervals = (60, 600)):
@@ -38,9 +38,7 @@ class WechatMonitor:
         while len(self.fake_id_dict):
             # update cfg
             self.cfg_dict['cookies'] = get_cookies_dict(self.session)
-            with open(self.cfg_path, 'w') as f:
-                yaml.dump(self.cfg_dict, f, default_flow_style=False, encoding='ucf-8', allow_unicode=True)
-                    
+            self.update_cfg()
             for account_name in self.fake_id_dict.keys():
                 print(f'\r\033[K [{time.asctime( time.localtime(time.time()))}] 检索公众号[{account_name}]中', end='')
                 fake_id = self.fake_id_dict[account_name]
@@ -48,37 +46,27 @@ class WechatMonitor:
                 if len(article_l) != 0:
                     self.report(account_name, article_l)
                 # 随机时延
-                t_wait = random.randint(itervals[0] // 2, itervals[0] * 2)
-                while t_wait:
-                    print(f'\r\033[K 公众号[{account_name}]检索完成，等待{t_wait}s', end='')
-                    time.sleep(1)
-                    t_wait -= 1
-                continue
+                random_wait(itervals[0], f'公众号[{account_name}]检索完成, 等待')
             # 随机时延
-            t_wait = random.randint(itervals[1] // 2, itervals[1] * 2)
-            while t_wait:
-                print(f'\r\033[K 本轮检索结束，下一轮于{t_wait}s后开始', end='')
-                time.sleep(1)
-                t_wait -= 1
-            continue
-    
+            random_wait(itervals[1], '本轮检索结束，下一轮等待：')
+
+    def update_cfg(self):
+        with open(self.cfg_path, 'w') as f:
+            yaml.dump(self.cfg_dict, f, default_flow_style=False, encoding='ucf-8', allow_unicode=True)
+        logging.info('更新配置文件')
+
     def get_newest(self):
         # 检查没有历史记录的fakeid
         logging.info('[初始化] 检索历史文章')
         for name in self.fake_id_dict.keys():
             if name in self.aid_history.keys():
                 continue
-            print(f'\r[{time.asctime( time.localtime(time.time()))}] 检索公众号[{name}]历史文章中', end='')
+            flush_print(f'[{time.asctime( time.localtime(time.time()))}] 检索公众号[{name}]历史文章中')
             article_l = get_articles_once_session(self.session, self.fake_id_dict[name], self.token)
             if len(article_l) > 0:
                 self.report(name, article_l)
             # 随机时延
-            t_wait = random.randint(self.itervals[0] // 2, self.itervals[0] * 2)
-            while t_wait:
-                print(f'\r\033[K 公众号[{account_name}]检索完成，等待{t_wait}s', end='')
-                time.sleep(1)
-                t_wait -= 1
-            continue
+            random_wait(self.itervals[0], f'公众号[{name}]检索完成, 等待')
         logging.info('[初始化] 检索历史文章 [完成]                                ')
 
     def report(self, account_name, article_l):
@@ -123,3 +111,7 @@ class WechatMonitor:
                     self.fake_id_dict[account_name] = fake_id
             except:
                 pass
+        
+        self.update_cfg()
+
+        self.get_newest()

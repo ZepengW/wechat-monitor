@@ -9,8 +9,7 @@ from wechat_monitor import WechatMonitor
 
 def main(args):
     wm = WechatMonitor(args.config, output_path= args.output)
-    wm.get_newest()
-    wm.listen_wechats(itervals=(args.time_accout, args.time_team))
+    wm.listen_wechats()
 
 
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ import sys
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from urllib.parse import urlparse, parse_qs
 import logging
+from func import *
 
 # 关闭报警
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -81,15 +82,7 @@ def get_articles_once_session(session:requests.Session, fakeid, token, name='', 
         except WechatNetworkError:
             t_wait = 900 * (2 **(5 - times_try))
             times_try -= 1
-            print("\r\033[K", end="")
-            #logging.warning(f'网络错误 [剩余尝试次数: {times_try}], 等待时间 {t_wait}秒')
-            while t_wait:
-                mins, secs = divmod(t_wait, 60)
-                timer = '{:02d}:{:02d}'.format(mins, secs)
-                print(f'访问受限 [剩余尝试次数: {times_try}], 等待时间 {timer}', end="\r")
-                time.sleep(1)
-                t_wait -= 1
-            continue
+            random_wait(t_wait, f'访问受限 [剩余尝试次数: {times_try}], 等待时间 ')
         except:
             logging.error("未知HTTP错误:", sys.exc_info()[0])
             sys.exit()
@@ -120,15 +113,7 @@ def get_articles_session(session:requests.Session, fakeid, token, name='', exist
         except WechatNetworkError:
             t_wait = 900 * (2 **(5 - times_try))
             times_try -= 1
-            print("\r\033[K", end="")
-            #logging.warning(f'网络错误 [剩余尝试次数: {times_try}], 等待时间 {t_wait}秒')
-            while t_wait:
-                mins, secs = divmod(t_wait, 60)
-                timer = '{:02d}:{:02d}'.format(mins, secs)
-                print(f'访问受限 [剩余尝试次数: {times_try}], 等待时间 {timer}', end="\r")
-                time.sleep(1)
-                t_wait -= 1
-            continue
+            random_wait(t_wait, f'访问受限 [剩余尝试次数: {times_try}], 等待时间 ')
         except:
             logging.error("未知HTTP错误:", sys.exc_info()[0])
             sys.exit()
