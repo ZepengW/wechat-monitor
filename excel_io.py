@@ -3,6 +3,7 @@ import logging
 import openpyxl
 from collections import defaultdict
 from openpyxl.styles import Font, colors
+import datetime
 # from openpyxl.styles import Hyperlink
 
 def get_history_aid(excel_path):
@@ -71,32 +72,35 @@ def write_to_excel(file_path, data, sheet_name = 'Sheet'):
         for col in range(1, new_sheet.max_column + 1):
             headers.append(new_sheet.cell(row=1, column=col).value)
 
-    num_rows_to_insert = len(data)
     num_existing_rows = new_sheet.max_row
-
-    # 移动现有数据
-    for row in range(num_existing_rows, 1, -1):
-        for col in range(1, new_sheet.max_column + 1):
-            cell = new_sheet.cell(row=row, column=col)
-            new_row = row + num_rows_to_insert
-            new_cell = new_sheet.cell(row=new_row, column=col)
-            new_cell.value = cell.value
+    # 获取“发布时间”列的数据
+    time_list = []
+    for i in range(2, new_sheet.max_row + 1):
+        time_value = new_sheet.cell(row=i, column=headers.index('发布时间') + 1).value
+        if isinstance(time_value, datetime.datetime):
+            time_list.append(time_value)
+        else:
+            time_list.append(datetime.datetime.strptime(time_value, '%Y-%m-%d %H:%M:%S'))
 
     # 插入新数据
-    for row, item in enumerate(data, start=2):
+    for item in data:
+        row_to_insert = len(time_list) + 2
+        for i in range(2, len(time_list) + 2):
+            if datetime.datetime.strptime(item['发布时间'], '%Y-%m-%d %H:%M:%S') > time_list[i - 2]:
+                row_to_insert = i
+                break
+        time_list.insert(row_to_insert - 2, datetime.datetime.strptime(item['发布时间'], '%Y-%m-%d %H:%M:%S'))
+        new_sheet.insert_rows(row_to_insert)
         for col, value in item.items():
             col_index = headers.index(col) + 1
             if col == '文章链接':
                 # 如果该列是“文章链接”，则将单元格设置为超链接
-                cell = new_sheet.cell(row=row, column=col_index, value="链接")
+                cell = new_sheet.cell(row=row_to_insert, column=col_index, value="链接")
                 cell.font = Font(color=colors.BLUE, underline='single')
                 cell.hyperlink = value
-                # hyperlink = openpyxl.utils.cell.coordinate_from_string(f'{openpyxl.utils.get_column_letter(col_index)}{row}')
-                # new_sheet[hyperlink].value = '链接'
-                # new_sheet[hyperlink].hyperlink = value
             else:
-                new_sheet.cell(row=row, column=col_index, value=value)
-
+                new_sheet.cell(row=row_to_insert, column=col_index, value=value)
+    
     # 保存Excel文件
     workbook.save(file_path)
 
@@ -174,13 +178,19 @@ def read_all_columns(file_path, column_name):
 
 if __name__ == '__main__':
     #search_aid('/Users/wangzepeng/Downloads/test.xlsx')
-    # data = [
-    # {"姓名": "A22A1", "年龄": 22, "性别": "男"},
-    # {"姓名": "BB222", "年龄": 28, "性别": "男"},
-    # {"姓名": "CC223", "年龄": 25, "性别": "女"}
-    # ]
-
+    data = [
+    {"公众号": "A22A1", "发布时间": "2023-03-09 11:28:39", "文章标题": "12", '文章链接':'www.baidu.com', '文章ID':'12'},
+    {"公众号": "A22A1", "发布时间": "2023-04-09 11:28:39", "文章标题": "2332", '文章链接':'www.baidu.com', '文章ID':'12'},
+    {"公众号": "A22A1", "发布时间": "2023-03-10 11:28:39", "文章标题": "12132", '文章链接':'www.baidu.com', '文章ID':'12'},
+    ]
+    data2 = [
+    {"公众号": "CCCC", "发布时间": "2023-03-09 11:30:39", "文章标题": "12", '文章链接':'www.baidu.com', '文章ID':'12'},
+    {"公众号": "CCCC", "发布时间": "2023-04-09 11:48:39", "文章标题": "2332", '文章链接':'www.baidu.com', '文章ID':'12'},
+    {"公众号": "CCCC", "发布时间": "2023-05-10 11:28:39", "文章标题": "12132", '文章链接':'www.baidu.com', '文章ID':'12'},
+    ]
+    write_to_excel('./test.xlsx', data)
+    write_to_excel('./test.xlsx', data2)
     # write_to_excel("example.xlsx", "Sheet", data)
     # write_to_excel("example.xlsx", "Sheet1", data)
-    read_all_columns("./wechat_report.xlsx", 'aid')
+    #read_all_columns("./wechat_report.xlsx", 'aid')
     
